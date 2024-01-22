@@ -20,7 +20,7 @@ if [ ! -d examples ]; then
   exit 1
 fi
 cd examples
-subexamples=$(find ./ -maxdepth 1 -mindepth 1 -type d)
+subexamples=$(find . -maxdepth 1 -mindepth 1 -type d)
 for d in $subexamples; do
   generate_docs $d
 done
