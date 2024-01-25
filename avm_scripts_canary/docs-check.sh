@@ -1,4 +1,20 @@
 #!/usr/bin/env bash
+set -euo pipefail
+
+generate_example_docs () {
+  local dir=$1
+  echo "===> Generating examples documentation in $dir"
+	cp "$dir/README.md" "$dir/README-generated.md"
+  rm -f "$dir/.terraform.lock.hcl"
+  terraform-docs -c ".terraform-docs.yml" "$dir"
+	if [ ! -z "$(diff -q $dir/README.md $dir/README-generated.md)" ]; then
+    		echo
+				echo "Unexpected difference in generated document. Run 'make pre-commit' to update the generated document and commit."
+				rm -f "$dir/README-generated.md"
+				exit 1
+  fi
+	rm -f "$dir/README-generated.md"
+}
 
 echo "==> Generating..."
 cp README.md README-generated.md
@@ -7,5 +23,18 @@ rm -f .terraform.lock.hcl
 terraform-docs -c .terraform-docs.yml .
 
 echo "==> Comparing generated code to committed code..."
-diff -q README.md README-generated.md || \
-    		(echo; echo "Unexpected difference in generated document. Run 'make pre-commit' to update the generated document and commit."; exit 1)
+if [ ! -z "$(diff -q README.md README-generated.md)" ]; then
+    		echo
+				echo "Unexpected difference in generated document. Run 'make pre-commit' to update the generated document and commit."
+				rm -f README-generated.md
+				exit 1
+fi
+
+rm -f README-generated.md
+
+cd examples
+subexamples=$(find . -maxdepth 1 -mindepth 1 -type d)
+for d in $subexamples; do
+  generate_example_docs $d
+done
+cd ..
